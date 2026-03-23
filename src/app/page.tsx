@@ -1,3 +1,7 @@
 export default function Home() {
-  return <main></main>;
+  return (
+    <main>
+      <h1>PAYBZERO</h1>
+    </main>
+  );
 }
