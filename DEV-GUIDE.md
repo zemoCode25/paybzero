@@ -6,21 +6,21 @@ A Letterboxd-style web app for the FlipTop battle rap league — the first and
 largest Filipino rap battle league. Fans can browse emcees, discover battles,
 track their watch history, rate battles, and contribute to the catalog.
 
-Think: *Letterboxd, but for FlipTop.*
+Think: _Letterboxd, but for FlipTop._
 
 ---
 
 ## Tech stack
 
-| Layer | Technology | Why |
-|---|---|---|
-| Framework | Next.js (App Router, TypeScript) | Full-stack, SSR, file-based routing |
-| Database | Supabase (Postgres) | Hosted Postgres + Auth + Realtime |
-| ORM | Drizzle ORM | Type-safe, schema-as-code, great migrations |
-| Auth | Supabase Auth | Email + Google login, zero custom auth logic |
-| Storage | Cloudflare R2 | Emcee photos and assets (S3-compatible, cheaper) |
-| UI | shadcn/ui + Magic UI | Component library on top of Tailwind |
-| Deployment | Vercel | Zero-config Next.js deployment |
+| Layer      | Technology                       | Why                                              |
+| ---------- | -------------------------------- | ------------------------------------------------ |
+| Framework  | Next.js (App Router, TypeScript) | Full-stack, SSR, file-based routing              |
+| Database   | Supabase (Postgres)              | Hosted Postgres + Auth + Realtime                |
+| ORM        | Drizzle ORM                      | Type-safe, schema-as-code, great migrations      |
+| Auth       | Supabase Auth                    | Email + Google login, zero custom auth logic     |
+| Storage    | Cloudflare R2                    | Emcee photos and assets (S3-compatible, cheaper) |
+| UI         | shadcn/ui + Magic UI             | Component library on top of Tailwind             |
+| Deployment | Vercel                           | Zero-config Next.js deployment                   |
 
 ---
 
@@ -71,12 +71,12 @@ These are post-MVP. The catalog has to exist first.
 
 ## Data sources
 
-| Data | Where it comes from | How often |
-|---|---|---|
+| Data                    | Where it comes from              | How often                        |
+| ----------------------- | -------------------------------- | -------------------------------- |
 | Emcee profiles + photos | fliptop.com.ph (one-time scrape) | Run once, then admin corrections |
-| Battles + events | YouTube Data API v3 | Weekly automated sync |
-| Admin corrections | Admin panel | As needed |
-| User submissions | In-app submission form | Ongoing, moderated |
+| Battles + events        | YouTube Data API v3              | Weekly automated sync            |
+| Admin corrections       | Admin panel                      | As needed                        |
+| User submissions        | In-app submission form           | Ongoing, moderated               |
 
 **Why YouTube as the primary source for battles?**
 Every FlipTop battle is on their official YouTube channel with structured
@@ -95,7 +95,8 @@ browser required.
 ## MVP build phases
 
 ### Phase 1 — Seed the catalog
-*Do this before building any UI.*
+
+_Do this before building any UI._
 
 - Run the Cheerio seed script to pull all ~180 emcee profiles from fliptop.com.ph
 - Download emcee photos and upload to Cloudflare R2 (never hotlink their CDN)
@@ -106,6 +107,7 @@ browser required.
 is the product. Build the data pipeline before the UI that surfaces it.
 
 ### Phase 2 — Admin panel
+
 Set up Directus or Payload CMS pointed at your Supabase Postgres database.
 This gives you an instant CRUD interface for emcees, battles, and events —
 plus a moderation queue for user submissions.
@@ -114,12 +116,14 @@ The admin panel's job is **corrections and moderation**, not data entry.
 New battles from new events are handled automatically by the YouTube sync.
 
 ### Phase 3 — Public browse
+
 - Emcee listing and profile pages
 - Battle catalog with filters
 - Event pages
 - Search
 
 ### Phase 4 — User layer
+
 - Auth (email + Google via Supabase)
 - User profiles
 - Watch history
@@ -127,6 +131,7 @@ New battles from new events are handled automatically by the YouTube sync.
 - Battle ratings
 
 ### Phase 5 — Community contributions
+
 - User battle submission form
 - Emcee profile edit suggestions
 - Content flagging
@@ -191,11 +196,13 @@ pnpm dev
 ## Contribution model
 
 **Admins can:**
+
 - Add, edit, and delete emcees, battles, and events directly
 - Approve or reject user-submitted battles
 - Manage content flags
 
 **Users can:**
+
 - Submit a missing battle (goes to pending review)
 - Suggest edits to an emcee profile (goes to pending review)
 - Flag incorrect information
