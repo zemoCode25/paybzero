@@ -3,4 +3,4 @@
 // Example:
 // export const users = pgTable('users', { ... })
 
-export {}
+export {};
