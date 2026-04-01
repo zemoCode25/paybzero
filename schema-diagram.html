@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PAYBZERO — Database Schema</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:           #0a0a0a;
+      --surface:      #111111;
+      --border:       #1e1e1e;
+      --text:         #e0e0e0;
+      --text-dim:     #666;
+      --text-muted:   #3a3a3a;
+
+      --orange:       #f97316;
+      --orange-glow:  rgba(249,115,22,0.12);
+      --orange-line:  rgba(249,115,22,0.55);
+
+      --blue:         #3b82f6;
+      --blue-glow:    rgba(59,130,246,0.12);
+      --blue-line:    rgba(59,130,246,0.55);
+
+      --purple:       #a855f7;
+      --purple-glow:  rgba(168,85,247,0.12);
+      --purple-line:  rgba(168,85,247,0.55);
+
+      --pk:    #fbbf24;
+      --fk:    #60a5fa;
+      --uk:    #34d399;
+      --cache: #f472b6;
+      --null:  #6b7280;
+    }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'IBM Plex Mono', monospace;
+    }
+
+    body { cursor: grab; user-select: none; }
+    body.grabbing { cursor: grabbing; }
+
+    /* ── Fixed UI ─────────────────────────────────────────── */
+    .hud {
+      position: fixed; top: 0; left: 0; right: 0;
+      z-index: 200;
+      padding: 18px 28px 40px;
+      background: linear-gradient(to bottom, #0a0a0af0 40%, transparent);
+      pointer-events: none;
+      display: flex; align-items: flex-start; justify-content: space-between;
+    }
+    .brand { display: flex; flex-direction: column; gap: 4px; }
+    .brand-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px; letter-spacing: 0.12em;
+      color: #fff;
+      line-height: 1;
+    }
+    .brand-title em { color: var(--orange); font-style: normal; }
+    .brand-title .sep { color: #2a2a2a; margin: 0 8px; font-size: 22px; }
+    .brand-title .sub { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 300; color: #555; letter-spacing: 0.06em; }
+    .brand-tag {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: #3a3a3a;
+    }
+
+    .group-pills { display: flex; gap: 10px; align-items: center; }
+    .pill {
+      display: flex; align-items: center; gap: 6px;
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+      border: 1px solid;
+    }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .pill-catalog { border-color: rgba(249,115,22,0.3); color: var(--orange); background: var(--orange-glow); }
+    .pill-catalog .pill-dot { background: var(--orange); }
+    .pill-user    { border-color: rgba(59,130,246,0.3);  color: var(--blue);   background: var(--blue-glow); }
+    .pill-user    .pill-dot { background: var(--blue); }
+    .pill-community { border-color: rgba(168,85,247,0.3); color: var(--purple); background: var(--purple-glow); }
+    .pill-community .pill-dot { background: var(--purple); }
+
+    /* Legend */
+    .legend {
+      position: fixed; bottom: 20px; right: 20px;
+      z-index: 200;
+      background: #111; border: 1px solid #1e1e1e;
+      border-radius: 10px; padding: 14px 16px;
+      font-size: 10.5px; pointer-events: none;
+      min-width: 160px;
+    }
+    .legend-title {
+      font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text-dim); margin-bottom: 10px;
+      border-bottom: 1px solid #1a1a1a; padding-bottom: 6px;
+    }
+    .legend-row {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 6px; color: #888;
+    }
+    .badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 8.5px; font-weight: 700;
+      padding: 1px 5px; border-radius: 3px;
+      letter-spacing: 0.04em; min-width: 26px; flex-shrink: 0;
+      font-family: 'Space Mono', monospace;
+    }
+    .b-pk    { background: rgba(251,191,36,0.18); color: var(--pk);    border: 1px solid rgba(251,191,36,0.35); }
+    .b-fk    { background: rgba(96,165,250,0.18);  color: var(--fk);    border: 1px solid rgba(96,165,250,0.35); }
+    .b-uk    { background: rgba(52,211,153,0.18);  color: var(--uk);    border: 1px solid rgba(52,211,153,0.35); }
+    .b-cache { background: rgba(244,114,182,0.18); color: var(--cache); border: 1px solid rgba(244,114,182,0.35); }
+    .b-null  { background: rgba(107,114,128,0.15); color: var(--null);  border: 1px solid rgba(107,114,128,0.3); }
+
+    .legend-sep { border-top: 1px solid #1a1a1a; margin: 8px 0; }
+    .swatch { display: inline-block; width: 20px; height: 1.5px; min-width: 20px; }
+
+    /* Zoom controls */
+    .zoom {
+      position: fixed; bottom: 20px; left: 20px;
+      z-index: 200; display: flex; flex-direction: column; gap: 4px;
+    }
+    .zbtn {
+      background: #111; border: 1px solid #1e1e1e; color: #888;
+      width: 32px; height: 32px; border-radius: 7px;
+      font-size: 17px; cursor: pointer; pointer-events: all;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.12s, color 0.12s;
+    }
+    .zbtn:hover { background: #1c1c1c; color: #ddd; }
+    .zlabel {
+      background: #111; border: 1px solid #1e1e1e; color: #555;
+      font-size: 9.5px; text-align: center; padding: 5px 0;
+      border-radius: 7px; font-family: 'IBM Plex Mono', monospace;
+    }
+
+    /* ── Canvas ───────────────────────────────────────────── */
+    #viewport { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+    #canvas   { position: absolute; transform-origin: 0 0; }
+
+    #svg-lines {
+      position: absolute; top: 0; left: 0;
+      pointer-events: none; overflow: visible;
+    }
+
+    /* ── Table Cards ──────────────────────────────────────── */
+    .tbl {
+      position: absolute;
+      background: var(--surface);
+      border-radius: 10px; overflow: hidden;
+      width: 252px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+
+    .tbl-head {
+      padding: 10px 13px 9px;
+      border-bottom: 1px solid;
+    }
+    .tbl-name {
+      font-family: 'Space Mono', monospace;
+      font-weight: 700; font-size: 12.5px; letter-spacing: 0.03em;
+      line-height: 1;
+    }
+    .tbl-desc {
+      font-size: 9.5px; margin-top: 3px; opacity: 0.55; line-height: 1.3;
+    }
+
+    /* group colours */
+    .g-cat .tbl-head { background: var(--orange-glow); border-color: rgba(249,115,22,0.28); }
+    .g-cat .tbl-name { color: var(--orange); }
+    .g-cat { border: 1px solid rgba(249,115,22,0.22); }
+
+    .g-usr .tbl-head { background: var(--blue-glow); border-color: rgba(59,130,246,0.28); }
+    .g-usr .tbl-name { color: var(--blue); }
+    .g-usr { border: 1px solid rgba(59,130,246,0.22); }
+
+    .g-com .tbl-head { background: var(--purple-glow); border-color: rgba(168,85,247,0.28); }
+    .g-com .tbl-name { color: var(--purple); }
+    .g-com { border: 1px solid rgba(168,85,247,0.22); }
+
+    /* Columns */
+    .tbl-body { padding: 3px 0; }
+    .col {
+      display: flex; align-items: center; gap: 5px;
+      padding: 5px 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.028);
+      transition: background 0.1s;
+    }
+    .col:last-child { border-bottom: none; }
+    .col:hover { background: rgba(255,255,255,0.03); }
+    .col-name { flex: 1; font-size: 11px; color: #ccc; }
+    .col-type { font-size: 9.5px; color: #3e3e3e; }
+    .col-tags { display: flex; gap: 3px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<!-- HUD -->
+<div class="hud">
+  <div class="brand">
+    <div class="brand-title">
+      PAY<em>B</em>ZERO
+      <span class="sep">—</span>
+      <span class="sub">Database Schema</span>
+    </div>
+    <div class="brand-tag">Letterboxd for FlipTop &nbsp;·&nbsp; Drag to pan &nbsp;·&nbsp; Scroll to zoom</div>
+  </div>
+  <div class="group-pills">
+    <div class="pill pill-catalog"><span class="pill-dot"></span>Catalog</div>
+    <div class="pill pill-user"><span class="pill-dot"></span>User Layer</div>
+    <div class="pill pill-community"><span class="pill-dot"></span>Community</div>
+  </div>
+</div>
+
+<!-- Zoom -->
+<div class="zoom">
+  <button class="zbtn" id="z-in">+</button>
+  <div class="zlabel" id="z-label">75%</div>
+  <button class="zbtn" id="z-out">−</button>
+  <button class="zbtn" id="z-reset" style="font-size:13px">⟳</button>
+</div>
+
+<!-- Legend -->
+<div class="legend">
+  <div class="legend-title">Legend</div>
+  <div class="legend-row"><span class="badge b-pk">PK</span> Primary key</div>
+  <div class="legend-row"><span class="badge b-fk">FK</span> Foreign key</div>
+  <div class="legend-row"><span class="badge b-uk">UK</span> Unique</div>
+  <div class="legend-row"><span class="badge b-cache">CA</span> Cached aggregate</div>
+  <div class="legend-row"><span class="badge b-null">?</span> Nullable</div>
+  <div class="legend-sep"></div>
+  <div class="legend-row"><span class="swatch" style="background:var(--orange);opacity:.7"></span> Catalog rel.</div>
+  <div class="legend-row"><span class="swatch" style="background:var(--blue);opacity:.7"></span> User rel.</div>
+  <div class="legend-row"><span class="swatch" style="background:var(--purple);opacity:.7"></span> Community rel.</div>
+</div>
+
+<!-- Viewport + Canvas -->
+<div id="viewport">
+  <div id="canvas">
+    <svg id="svg-lines" width="3200" height="2000"></svg>
+
+    <!-- ════════════════ CATALOG ════════════════ -->
+
+    <div class="tbl g-cat" id="T-event_series" style="left:50px;top:100px">
+      <div class="tbl-head">
+        <div class="tbl-name">event_series</div>
+        <div class="tbl-desc">Top-level lineup groupings (Ahon, Isabuhay…)</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">slug</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-uk">UK</span></span></div>
+        <div class="col"><span class="col-name">name</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">description</span><span class="col-type">text</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-cat" id="T-events" style="left:50px;top:310px">
+      <div class="tbl-head">
+        <div class="tbl-name">events</div>
+        <div class="tbl-desc">Individual events (e.g. Ahon 13)</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">series_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">slug</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-uk">UK</span></span></div>
+        <div class="col"><span class="col-name">name</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">edition</span><span class="col-type">int</span></div>
+        <div class="col"><span class="col-name">venue</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">held_at</span><span class="col-type">date</span></div>
+        <div class="col"><span class="col-name">youtube_playlist_id</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-null">?</span></span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-cat" id="T-battles" style="left:390px;top:100px">
+      <div class="tbl-head">
+        <div class="tbl-name">battles</div>
+        <div class="tbl-desc">Individual rap battle videos</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">event_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-fk">FK</span><span class="badge b-null">?</span></span></div>
+        <div class="col"><span class="col-name">youtube_video_id</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-uk">UK</span></span></div>
+        <div class="col"><span class="col-name">format</span><span class="col-type">smallint</span></div>
+        <div class="col"><span class="col-name">rounds</span><span class="col-type">smallint</span></div>
+        <div class="col"><span class="col-name">thumbnail_key</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">duration_seconds</span><span class="col-type">int</span></div>
+        <div class="col"><span class="col-name">published_at</span><span class="col-type">date</span></div>
+        <div class="col"><span class="col-name">avg_rating</span><span class="col-type">numeric</span><span class="col-tags"><span class="badge b-cache">CA</span></span></div>
+        <div class="col"><span class="col-name">rating_count</span><span class="col-type">int</span><span class="col-tags"><span class="badge b-cache">CA</span></span></div>
+        <div class="col"><span class="col-name">created_at</span><span class="col-type">timestamptz</span></div>
+        <div class="col"><span class="col-name">updated_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-cat" id="T-battle_emcees" style="left:760px;top:340px">
+      <div class="tbl-head">
+        <div class="tbl-name">battle_emcees</div>
+        <div class="tbl-desc">Junction — who fought in each battle</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">battle_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">emcee_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">team</span><span class="col-type">char</span></div>
+        <div class="col"><span class="col-name">position</span><span class="col-type">smallint</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-cat" id="T-emcees" style="left:1110px;top:100px">
+      <div class="tbl-head">
+        <div class="tbl-name">emcees</div>
+        <div class="tbl-desc">Rapper profiles</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">slug</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-uk">UK</span></span></div>
+        <div class="col"><span class="col-name">name</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">real_name</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-null">?</span></span></div>
+        <div class="col"><span class="col-name">nickname</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-null">?</span></span></div>
+        <div class="col"><span class="col-name">region</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">bio</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">profile_photo_key</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">is_active</span><span class="col-type">bool</span></div>
+        <div class="col"><span class="col-name">created_at</span><span class="col-type">timestamptz</span></div>
+        <div class="col"><span class="col-name">updated_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <!-- ════════════════ USER LAYER ════════════════ -->
+
+    <div class="tbl g-usr" id="T-users" style="left:1110px;top:600px">
+      <div class="tbl-head">
+        <div class="tbl-name">users</div>
+        <div class="tbl-desc">Profiles — extends Supabase auth.users</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">username</span><span class="col-type">text</span><span class="col-tags"><span class="badge b-uk">UK</span></span></div>
+        <div class="col"><span class="col-name">display_name</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">avatar_url</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">bio</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">is_public</span><span class="col-type">bool</span></div>
+        <div class="col"><span class="col-name">created_at</span><span class="col-type">timestamptz</span></div>
+        <div class="col"><span class="col-name">updated_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-usr" id="T-watches" style="left:390px;top:580px">
+      <div class="tbl-head">
+        <div class="tbl-name">watches</div>
+        <div class="tbl-desc">Battles a user has watched</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">user_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">battle_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">watched_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-usr" id="T-ratings" style="left:390px;top:720px">
+      <div class="tbl-head">
+        <div class="tbl-name">ratings</div>
+        <div class="tbl-desc">User ratings on battles (1–5 stars)</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">user_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">battle_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">score</span><span class="col-type">smallint</span></div>
+        <div class="col"><span class="col-name">rated_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-usr" id="T-saved_battles" style="left:390px;top:870px">
+      <div class="tbl-head">
+        <div class="tbl-name">saved_battles</div>
+        <div class="tbl-desc">Bookmarked battles</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">user_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">battle_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">saved_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-usr" id="T-saved_emcees" style="left:760px;top:620px">
+      <div class="tbl-head">
+        <div class="tbl-name">saved_emcees</div>
+        <div class="tbl-desc">Followed emcees</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">user_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">emcee_id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">saved_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <!-- ════════════════ COMMUNITY ════════════════ -->
+
+    <div class="tbl g-com" id="T-submissions" style="left:760px;top:800px">
+      <div class="tbl-head">
+        <div class="tbl-name">submissions</div>
+        <div class="tbl-desc">User-submitted corrections or new battles</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">submitted_by</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">type</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">status</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">payload</span><span class="col-type">jsonb</span></div>
+        <div class="col"><span class="col-name">notes</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">reviewed_by</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-fk">FK</span><span class="badge b-null">?</span></span></div>
+        <div class="col"><span class="col-name">reviewed_at</span><span class="col-type">timestamptz</span><span class="col-tags"><span class="badge b-null">?</span></span></div>
+        <div class="col"><span class="col-name">created_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+    <div class="tbl g-com" id="T-flags" style="left:1110px;top:990px">
+      <div class="tbl-head">
+        <div class="tbl-name">flags</div>
+        <div class="tbl-desc">User-reported inaccuracies</div>
+      </div>
+      <div class="tbl-body">
+        <div class="col"><span class="col-name">id</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-pk">PK</span></span></div>
+        <div class="col"><span class="col-name">flagged_by</span><span class="col-type">uuid</span><span class="col-tags"><span class="badge b-fk">FK</span></span></div>
+        <div class="col"><span class="col-name">entity_type</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">entity_id</span><span class="col-type">uuid</span></div>
+        <div class="col"><span class="col-name">reason</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">status</span><span class="col-type">text</span></div>
+        <div class="col"><span class="col-name">created_at</span><span class="col-type">timestamptz</span></div>
+      </div>
+    </div>
+
+  </div><!-- #canvas -->
+</div><!-- #viewport -->
+
+<script>
+// ── Pan & Zoom ────────────────────────────────────────────────
+const vp = document.getElementById('viewport');
+const canvas = document.getElementById('canvas');
+let S = 0.72, TX = 60, TY = 50;
+let dragging = false, ox, oy, oTX, oTY;
+
+function applyXform() {
+  canvas.style.transform = `translate(${TX}px,${TY}px) scale(${S})`;
+  document.getElementById('z-label').textContent = Math.round(S * 100) + '%';
+}
+applyXform();
+
+vp.addEventListener('mousedown', e => {
+  dragging = true; ox = e.clientX; oy = e.clientY; oTX = TX; oTY = TY;
+  document.body.classList.add('grabbing');
+});
+window.addEventListener('mousemove', e => {
+  if (!dragging) return;
+  TX = oTX + e.clientX - ox; TY = oTY + e.clientY - oy; applyXform();
+});
+window.addEventListener('mouseup', () => { dragging = false; document.body.classList.remove('grabbing'); });
+
+vp.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = vp.getBoundingClientRect();
+  const mx = e.clientX - r.left, my = e.clientY - r.top;
+  const d = e.deltaY < 0 ? 1.1 : 0.9;
+  const ns = Math.max(0.18, Math.min(2.2, S * d));
+  TX = mx - (mx - TX) * (ns / S);
+  TY = my - (my - TY) * (ns / S);
+  S = ns; applyXform();
+}, { passive: false });
+
+document.getElementById('z-in').onclick  = () => { S = Math.min(2.2, S * 1.15); applyXform(); };
+document.getElementById('z-out').onclick = () => { S = Math.max(0.18, S * 0.87); applyXform(); };
+document.getElementById('z-reset').onclick = () => { S = 0.72; TX = 60; TY = 50; applyXform(); };
+
+// ── SVG Connections ───────────────────────────────────────────
+const OR = '#f97316', BL = '#3b82f6', PU = '#a855f7';
+
+function R(id) {
+  const el = document.getElementById(id);
+  const l = parseInt(el.style.left), t = parseInt(el.style.top);
+  const w = el.offsetWidth, h = el.offsetHeight;
+  return { l, t, w, h, cx: l + w/2, cy: t + h/2,
+    mR: [l+w, t+h/2], mL: [l, t+h/2],
+    mT: [l+w/2, t],   mB: [l+w/2, t+h] };
+}
+
+function bez(x1,y1,x2,y2,dx=90) {
+  return `M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}`;
+}
+function bezV(x1,y1,x2,y2,dy=60) {
+  return `M${x1},${y1} C${x1},${y1+dy} ${x2},${y2-dy} ${x2},${y2}`;
+}
+
+function mkArrow(svg, id, color) {
+  let defs = svg.querySelector('defs');
+  if (!defs) { defs = document.createElementNS('http://www.w3.org/2000/svg','defs'); svg.prepend(defs); }
+  const m = document.createElementNS('http://www.w3.org/2000/svg','marker');
+  m.setAttribute('id', id); m.setAttribute('markerWidth','7'); m.setAttribute('markerHeight','7');
+  m.setAttribute('refX','6'); m.setAttribute('refY','3.5'); m.setAttribute('orient','auto');
+  const p = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  p.setAttribute('points','0 0, 7 3.5, 0 7'); p.setAttribute('fill', color); p.setAttribute('opacity','0.65');
+  m.appendChild(p); defs.appendChild(m);
+}
+
+function line(svg, d, color, aid, label, lx, ly) {
+  const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d', d);
+  path.setAttribute('stroke', color); path.setAttribute('stroke-width','1.5');
+  path.setAttribute('fill','none'); path.setAttribute('opacity','0.55');
+  path.setAttribute('marker-end', `url(#${aid})`);
+  svg.appendChild(path);
+  if (label) {
+    const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+    t.setAttribute('x', lx); t.setAttribute('y', ly);
+    t.setAttribute('text-anchor','middle');
+    t.setAttribute('font-family',"'IBM Plex Mono', monospace");
+    t.setAttribute('font-size','9'); t.setAttribute('fill','#484848');
+    t.textContent = label; svg.appendChild(t);
+  }
+}
+
+function draw() {
+  const svg = document.getElementById('svg-lines');
+  svg.innerHTML = '';
+
+  mkArrow(svg,'a-or', OR);
+  mkArrow(svg,'a-bl', BL);
+  mkArrow(svg,'a-pu', PU);
+
+  const es = R('T-event_series');
+  const ev = R('T-events');
+  const ba = R('T-battles');
+  const be = R('T-battle_emcees');
+  const em = R('T-emcees');
+  const us = R('T-users');
+  const wa = R('T-watches');
+  const ra = R('T-ratings');
+  const sb = R('T-saved_battles');
+  const se = R('T-saved_emcees');
+  const su = R('T-submissions');
+  const fl = R('T-flags');
+
+  // ── Catalog ──
+  // event_series → events (vertical, stacked)
+  line(svg, bezV(es.mB[0], es.mB[1], ev.mT[0], ev.mT[1], 30), OR, 'a-or', '1 : N', es.mB[0]+20, (es.mB[1]+ev.mT[1])/2);
+
+  // events → battles (right to left)
+  line(svg, bez(ev.mR[0], ev.mR[1], ba.mL[0], ba.mL[1], 80), OR, 'a-or', 'hosts', (ev.mR[0]+ba.mL[0])/2, ev.mR[1]-10);
+
+  // battles → battle_emcees
+  line(svg, bez(ba.mR[0], ba.mR[1], be.mL[0], be.mL[1], 60), OR, 'a-or', null, 0, 0);
+
+  // battle_emcees → emcees
+  line(svg, bez(be.mR[0], be.mR[1], em.mL[0], em.mL[1], 60), OR, 'a-or', null, 0, 0);
+
+  // many-to-many label on battle_emcees
+  line(svg, bez(em.mL[0], em.mL[1], be.mR[0], be.mR[1], -60), OR, 'a-or', 'M : N', (em.mL[0]+be.mR[0])/2, em.mL[1]-12);
+
+  // ── User → junction tables ──
+  // users → watches
+  line(svg, bez(wa.mR[0], wa.mR[1], us.mL[0], us.mL[1], 120), BL, 'a-bl', 'watches', (wa.mR[0]+us.mL[0])/2, wa.mR[1]-10);
+
+  // users → ratings
+  line(svg, bez(ra.mR[0], ra.mR[1], us.mL[0], us.mL[1]+40, 160), BL, 'a-bl', 'rates', (ra.mR[0]+us.mL[0])/2, ra.mR[1]-10);
+
+  // users → saved_battles
+  line(svg, bez(sb.mR[0], sb.mR[1], us.mL[0], us.mL[1]+80, 220), BL, 'a-bl', 'saves', (sb.mR[0]+us.mL[0])/2, sb.mR[1]-10);
+
+  // users → saved_emcees
+  line(svg, `M${us.mL[0]},${us.mL[1]} C${us.mL[0]-60},${us.mL[1]} ${se.mR[0]+60},${se.mR[1]} ${se.mR[0]},${se.mR[1]}`, BL, 'a-bl', 'follows', (us.mL[0]+se.mR[0])/2, us.mL[1]-12);
+
+  // battles → watches (battle_id)
+  line(svg, bezV(ba.mB[0]-15, ba.mB[1], wa.mT[0]-15, wa.mT[1], 50), BL, 'a-bl', null, 0, 0);
+
+  // battles → ratings (battle_id)
+  line(svg, bezV(ba.mB[0], ba.mB[1], ra.mT[0]-15, ra.mT[1], 80), BL, 'a-bl', null, 0, 0);
+
+  // battles → saved_battles (battle_id)
+  line(svg, bezV(ba.mB[0]+15, ba.mB[1], sb.mT[0]-15, sb.mT[1], 110), BL, 'a-bl', null, 0, 0);
+
+  // emcees → saved_emcees (emcee_id)
+  line(svg, bezV(em.mB[0], em.mB[1], se.mT[0]+20, se.mT[1], 50), BL, 'a-bl', null, 0, 0);
+
+  // ── Community ──
+  // users → submissions
+  line(svg, `M${us.mB[0]},${us.mB[1]} C${us.mB[0]},${us.mB[1]+60} ${su.mR[0]+60},${su.cy} ${su.mR[0]},${su.cy}`, PU, 'a-pu', 'submits', us.mB[0]+50, us.mB[1]+40);
+
+  // users → flags
+  line(svg, bezV(us.mB[0]+10, us.mB[1], fl.mT[0], fl.mT[1], 80), PU, 'a-pu', 'flags', us.mB[0]+50, (us.mB[1]+fl.mT[1])/2);
+}
+
+window.addEventListener('load', () => setTimeout(draw, 120));
+</script>
+</body>
+</html>
